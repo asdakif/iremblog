@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { Menu, X, Search, BookOpen, Moon, Sun } from "lucide-react";
 import SearchBar from "./SearchBar";
+import { dictionaries, normalizeLocale, type Locale } from "@/lib/i18n";
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -11,11 +13,18 @@ export default function Header() {
   const [darkMode, setDarkMode] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [readerLoggedIn, setReaderLoggedIn] = useState(false);
+  const [locale, setLocale] = useState<Locale>("en");
+  const pathname = usePathname();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const match = document.cookie.match(/(?:^|;\s*)lang=([^;]+)/);
+    setLocale(normalizeLocale(match?.[1]));
   }, []);
 
   useEffect(() => {
@@ -48,6 +57,10 @@ export default function Header() {
     document.documentElement.classList.toggle("dark", next);
   };
 
+  const t = dictionaries[locale];
+
+  const localeHref = `${pathname}?lang=${locale === "en" ? "tr" : "en"}`;
+
   return (
     <>
       <header
@@ -79,25 +92,25 @@ export default function Header() {
                 href="/"
                 className="text-stone-600 dark:text-stone-400 hover:text-ink-600 dark:hover:text-ink-400 font-medium transition-colors text-sm"
               >
-                Home
+                {t.nav.home}
               </Link>
               <Link
                 href="/categories/fiction"
                 className="text-stone-600 dark:text-stone-400 hover:text-ink-600 dark:hover:text-ink-400 font-medium transition-colors text-sm"
               >
-                Fiction
+                {t.nav.fiction}
               </Link>
               <Link
                 href="/categories/memoir"
                 className="text-stone-600 dark:text-stone-400 hover:text-ink-600 dark:hover:text-ink-400 font-medium transition-colors text-sm"
               >
-                Memoir
+                {t.nav.memoir}
               </Link>
               <Link
                 href="/categories/poetry"
                 className="text-stone-600 dark:text-stone-400 hover:text-ink-600 dark:hover:text-ink-400 font-medium transition-colors text-sm"
               >
-                Poetry
+                {t.nav.poetry}
               </Link>
             </nav>
 
@@ -107,26 +120,33 @@ export default function Header() {
                 href={readerLoggedIn ? "/profile" : "/account/login"}
                 className="hidden md:inline-flex px-3 py-1.5 rounded-full text-xs font-semibold border border-ink-100 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:text-ink-600 dark:hover:text-ink-400"
               >
-                {readerLoggedIn ? "Profile" : "Sign in"}
+                {readerLoggedIn ? t.nav.profile : t.nav.signIn}
+              </Link>
+              <Link
+                href={localeHref}
+                className="hidden md:inline-flex px-3 py-1.5 rounded-full text-xs font-semibold border border-ink-100 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:text-ink-600 dark:hover:text-ink-400"
+                aria-label={t.nav.language}
+              >
+                {locale === "en" ? "TR" : "EN"}
               </Link>
               <button
                 onClick={() => setSearchOpen(!searchOpen)}
                 className="p-2 rounded-full text-stone-500 dark:text-stone-400 hover:text-ink-600 dark:hover:text-ink-400 hover:bg-ink-50 dark:hover:bg-stone-800 transition-all"
-                aria-label="Search"
+                aria-label={t.nav.search}
               >
                 <Search size={20} />
               </button>
               <button
                 onClick={toggleDark}
                 className="p-2 rounded-full text-stone-500 dark:text-stone-400 hover:text-ink-600 dark:hover:text-ink-400 hover:bg-ink-50 dark:hover:bg-stone-800 transition-all"
-                aria-label="Toggle dark mode"
+                aria-label={t.nav.toggleDark}
               >
                 {darkMode ? <Sun size={20} /> : <Moon size={20} />}
               </button>
               <button
                 className="md:hidden p-2 rounded-full text-stone-500 hover:bg-ink-50 dark:hover:bg-stone-800 transition-all"
                 onClick={() => setMenuOpen(!menuOpen)}
-                aria-label="Menu"
+                aria-label={t.nav.menu}
               >
                 {menuOpen ? <X size={20} /> : <Menu size={20} />}
               </button>
@@ -148,11 +168,12 @@ export default function Header() {
           <div className="md:hidden border-t border-ink-100/40 dark:border-stone-700/40 bg-warm-50/95 dark:bg-stone-900/95 backdrop-blur-md">
             <nav className="flex flex-col px-4 py-4 gap-1">
               {[
-                { href: "/", label: "Home" },
-                { href: "/categories/fiction", label: "Fiction" },
-                { href: "/categories/memoir", label: "Memoir" },
-                { href: "/categories/poetry", label: "Poetry" },
-                { href: readerLoggedIn ? "/profile" : "/account/login", label: readerLoggedIn ? "Profile" : "Sign in" },
+                { href: "/", label: t.nav.home },
+                { href: "/categories/fiction", label: t.nav.fiction },
+                { href: "/categories/memoir", label: t.nav.memoir },
+                { href: "/categories/poetry", label: t.nav.poetry },
+                { href: readerLoggedIn ? "/profile" : "/account/login", label: readerLoggedIn ? t.nav.profile : t.nav.signIn },
+                { href: localeHref, label: locale === "en" ? "TR" : "EN" },
               ].map(({ href, label }) => (
                 <Link
                   key={href}

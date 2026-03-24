@@ -6,6 +6,8 @@ import StoryCard from "@/components/public/StoryCard";
 import Spotlight from "@/components/public/Spotlight";
 import MostRead from "@/components/public/MostRead";
 import { BookOpen, Feather, ArrowRight } from "lucide-react";
+import { cookies } from "next/headers";
+import { dictionaries, normalizeLocale } from "@/lib/i18n";
 
 async function getData() {
   const [featured, recent, categories, mostRead, spotlight] = await Promise.all([
@@ -51,6 +53,9 @@ async function getData() {
 }
 
 export default async function HomePage() {
+  const cookieStore = await cookies();
+  const locale = normalizeLocale(cookieStore.get("lang")?.value);
+  const t = dictionaries[locale].home;
   const { featured, recent, categories, mostRead, spotlight } = await getData();
 
   return (
@@ -67,19 +72,18 @@ export default async function HomePage() {
         <div className="max-w-4xl mx-auto text-center animate-fade-in-up">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-ink-100/60 dark:bg-ink-900/30 text-ink-700 dark:text-ink-300 text-sm font-medium mb-6">
             <Feather size={14} />
-            <span>Stories that linger</span>
+            <span>{t.badge}</span>
           </div>
           <h1
             className="text-5xl md:text-7xl font-bold mb-6 leading-tight"
             style={{ fontFamily: "var(--font-display)" }}
           >
-            Words that
+            {t.titleTop}
             <br />
-            <span className="gradient-text">warm the soul</span>
+            <span className="gradient-text">{t.titleAccent}</span>
           </h1>
           <p className="text-xl text-stone-600 dark:text-stone-400 max-w-2xl mx-auto leading-relaxed mb-10">
-            A place for fiction, memoir, and poetry — stories that slow you
-            down and make you feel something real.
+            {t.description}
           </p>
           <div className="flex items-center justify-center gap-4 flex-wrap">
             <Link
@@ -87,13 +91,13 @@ export default async function HomePage() {
               className="px-6 py-3 bg-ink-500 hover:bg-ink-600 text-white rounded-xl font-semibold transition-all shadow-md hover:shadow-lg hover:shadow-ink-300/30 flex items-center gap-2"
             >
               <BookOpen size={18} />
-              Start Reading
+              {t.startReading}
             </Link>
             <Link
               href="/search"
               className="px-6 py-3 border border-ink-200 dark:border-stone-600 text-stone-700 dark:text-stone-300 hover:border-ink-400 dark:hover:border-ink-500 rounded-xl font-semibold transition-all"
             >
-              Browse Stories
+              {t.browseStories}
             </Link>
           </div>
         </div>
@@ -129,7 +133,7 @@ export default async function HomePage() {
                 className="text-2xl md:text-3xl font-bold text-stone-900 dark:text-stone-100"
                 style={{ fontFamily: "var(--font-display)" }}
               >
-                ✦ Featured Stories
+                {`✦ ${t.featured}`}
               </h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -152,20 +156,20 @@ export default async function HomePage() {
                   className="text-2xl md:text-3xl font-bold text-stone-900 dark:text-stone-100"
                   style={{ fontFamily: "var(--font-display)" }}
                 >
-                  Recent Stories
+                  {t.recent}
                 </h2>
                 <Link
                   href="/search"
                   className="flex items-center gap-1 text-sm font-medium text-ink-600 dark:text-ink-400 hover:text-ink-700 dark:hover:text-ink-300 transition-colors"
                 >
-                  View all <ArrowRight size={15} />
+                  {t.viewAll} <ArrowRight size={15} />
                 </Link>
               </div>
 
               {recent.length === 0 ? (
                 <div className="text-center py-16 text-stone-400 dark:text-stone-500">
                   <BookOpen size={48} className="mx-auto mb-4 opacity-30" />
-                  <p className="text-lg">No stories yet. Check back soon.</p>
+                  <p className="text-lg">{t.noStories}</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
