@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import Header from "@/components/public/Header";
 import Footer from "@/components/public/Footer";
@@ -19,6 +20,7 @@ import StoryNav from "@/components/public/StoryNav";
 import JsonLd from "@/components/public/JsonLd";
 import { formatDate, readingTime } from "@/lib/utils";
 import { sanitizeRichText } from "@/lib/sanitize";
+import { verifyReaderSessionToken } from "@/lib/readerAuth";
 import { Calendar, Clock, Eye } from "lucide-react";
 
 export const revalidate = 60;
@@ -66,6 +68,25 @@ export default async function StoryPage({ params }: Props) {
   });
 
   if (!story) notFound();
+
+  const cookieStore = await cookies();
+  const readerToken = cookieStore.get("reader_session")?.value;
+  const readerPayload = verifyReaderSessionToken(readerToken);
+  let hasNewsletterAccess = false;
+  if (readerPayload?.userId) {
+    const reader = await prisma.readerUser.findUnique({
+      where: { id: readerPayload.userId },
+      select: { email: true },
+    });
+    if (reader?.email) {
+      const subscriber = await prisma.subscriber.findUnique({
+        where: { email: reader.email },
+        select: { id: true },
+      });
+      hasNewsletterAccess = !!subscriber;
+    }
+  }
+  const canReadPremium = !story.isPremium || hasNewsletterAccess;
 
   const categories = story.categories.map((c) => c.category);
   const tags = story.tags.map((t) => t.tag);
@@ -236,11 +257,36 @@ export default async function StoryPage({ params }: Props) {
             )}
 
             {/* Content */}
-            <div
-              id="story-content"
-              className="story-content"
-              dangerouslySetInnerHTML={{ __html: safeStoryContent }}
-            />
+            {canReadPremium ? (
+              <div
+                id="story-content"
+                className="story-content"
+                dangerouslySetInnerHTML={{ __html: safeStoryContent }}
+              />
+            ) : (
+              <div className="rounded-2xl border border-ink-100/60 dark:border-stone-700/60 bg-white/70 dark:bg-stone-800/50 p-6">
+                <p className="text-sm font-semibold text-rose-600 dark:text-rose-400 mb-2">
+                  Premium content
+                </p>
+                <p className="text-stone-600 dark:text-stone-300 mb-4">
+                  This story is available to newsletter subscribers. Subscribe (or resubscribe) to unlock full content.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Link
+                    href="/profile"
+                    className="px-4 py-2 rounded-xl bg-ink-600 hover:bg-ink-700 text-white text-sm font-semibold"
+                  >
+                    Manage subscription
+                  </Link>
+                  <Link
+                    href="/account/login"
+                    className="px-4 py-2 rounded-xl border border-ink-200 dark:border-stone-600 text-sm font-semibold"
+                  >
+                    Sign in
+                  </Link>
+                </div>
+              </div>
+            )}
 
             {/* Tags + Share */}
             <div className="mt-10 pt-6 border-t border-ink-100/60 dark:border-stone-700/60 space-y-4">
@@ -283,7 +329,7 @@ export default async function StoryPage({ params }: Props) {
             <StoryNav prevStory={prevStory ?? undefined} nextStory={nextStory ?? undefined} />
 
             {/* Comments */}
-            <CommentSection storyId={story.id} comments={allComments} />
+            {canReadPremium && <CommentSection storyId={story.id} comments={allComments} />}
 
             {/* Related */}
             {related.length > 0 && (
