@@ -16,6 +16,9 @@ model Story {
   coverImage  String?
   published   Boolean   @default(false)
   featured    Boolean   @default(false)
+  isPremium   Boolean   @default(false)
+  sponsorLabel String?
+  sponsorUrl  String?
   viewCount   Int       @default(0)
   sortOrder   Int       @default(0)
   createdAt   DateTime  @default(now())
@@ -24,6 +27,7 @@ model Story {
   tags        TagOnStory[]
   comments    Comment[]
   dailyViews  DailyView[]
+  analyticsEvents StoryAnalyticsEvent[]
   series      SeriesStory[]
   savedBy     SavedStory[]
 }
@@ -93,6 +97,18 @@ model DailyView {
   count   Int    @default(0)
 
   @@unique([storyId, date])
+}
+
+model StoryAnalyticsEvent {
+  id         Int      @id @default(autoincrement())
+  storyId    Int
+  story      Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  eventType  String
+  value      Int?
+  sessionKey String?
+  createdAt  DateTime @default(now())
+
+  @@index([storyId, eventType, createdAt])
 }
 
 model Series {

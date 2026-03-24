@@ -19,6 +19,9 @@ type Props = {
     coverImage: string;
     published: boolean;
     featured: boolean;
+    isPremium: boolean;
+    sponsorLabel: string;
+    sponsorUrl: string;
     categoryIds: number[];
     tagIds: number[];
   };
@@ -44,6 +47,9 @@ export default function StoryForm({ storyId, initialData, categories, tags }: Pr
   const [coverImage, setCoverImage] = useState(initialData?.coverImage || "");
   const [published, setPublished] = useState(initialData?.published ?? false);
   const [featured, setFeatured] = useState(initialData?.featured ?? false);
+  const [isPremium, setIsPremium] = useState(initialData?.isPremium ?? false);
+  const [sponsorLabel, setSponsorLabel] = useState(initialData?.sponsorLabel || "");
+  const [sponsorUrl, setSponsorUrl] = useState(initialData?.sponsorUrl || "");
   const [selectedCategories, setSelectedCategories] = useState<number[]>(
     initialData?.categoryIds || []
   );
@@ -165,6 +171,9 @@ export default function StoryForm({ storyId, initialData, categories, tags }: Pr
       coverImage,
       published: publish !== undefined ? publish : published,
       featured,
+      isPremium,
+      sponsorLabel: sponsorLabel.trim() || null,
+      sponsorUrl: sponsorUrl.trim() || null,
       categoryIds: selectedCategories,
       tagIds: selectedTags,
     };
@@ -388,6 +397,43 @@ export default function StoryForm({ storyId, initialData, categories, tags }: Pr
                   Featured
                 </p>
               </label>
+
+              <label className="flex items-center gap-3 cursor-pointer">
+                <div
+                  onClick={() => setIsPremium(!isPremium)}
+                  className={`relative w-10 h-5 rounded-full transition-all cursor-pointer ${
+                    isPremium ? "bg-rose-500" : "bg-stone-600"
+                  }`}
+                >
+                  <div
+                    className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
+                      isPremium ? "translate-x-5" : ""
+                    }`}
+                  />
+                </div>
+                <p className="text-sm text-stone-200">Premium content</p>
+              </label>
+            </div>
+          </div>
+
+          {/* Monetization */}
+          <div className="bg-stone-800 border border-stone-700/60 rounded-xl p-4">
+            <h3 className="text-sm font-semibold text-stone-300 mb-3">Sponsorship</h3>
+            <div className="space-y-2">
+              <input
+                type="text"
+                value={sponsorLabel}
+                onChange={(e) => setSponsorLabel(e.target.value)}
+                placeholder="Sponsor label (optional)"
+                className="w-full px-3 py-2 bg-stone-700/60 border border-stone-600/60 rounded-lg text-white placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-ink-500/50 text-xs"
+              />
+              <input
+                type="url"
+                value={sponsorUrl}
+                onChange={(e) => setSponsorUrl(e.target.value)}
+                placeholder="https://sponsor.example"
+                className="w-full px-3 py-2 bg-stone-700/60 border border-stone-600/60 rounded-lg text-white placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-ink-500/50 text-xs"
+              />
             </div>
           </div>
 

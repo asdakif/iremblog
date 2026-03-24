@@ -12,6 +12,9 @@ type Story = {
   slug: string;
   excerpt: string;
   coverImage: string | null;
+  isPremium?: boolean;
+  sponsorLabel?: string | null;
+  sponsorUrl?: string | null;
   createdAt: Date | string;
   content: string;
   categories: { category: Category }[];
@@ -52,6 +55,16 @@ export default function StoryCard({ story, featured = false }: { story: Story; f
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
             <div className="absolute bottom-0 left-0 right-0 p-6">
               <div className="flex flex-wrap gap-2 mb-3">
+                {story.isPremium && (
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-500/80 text-white">
+                    Premium
+                  </span>
+                )}
+                {story.sponsorLabel && (
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-warm-500/80 text-white">
+                    Sponsored
+                  </span>
+                )}
                 {categories.map((cat) => (
                   <span
                     key={cat.id}
@@ -122,6 +135,16 @@ export default function StoryCard({ story, featured = false }: { story: Story; f
       </Link>
       <div className="p-5 flex flex-col flex-1">
         <div className="flex flex-wrap gap-1.5 mb-3">
+          {story.isPremium && (
+            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300">
+              Premium
+            </span>
+          )}
+          {story.sponsorLabel && (
+            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-warm-100 text-warm-700 dark:bg-warm-900/30 dark:text-warm-300">
+              Sponsored
+            </span>
+          )}
           {categories.map((cat) => (
             <Link
               key={cat.id}

@@ -47,7 +47,19 @@ export async function PUT(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Invalid id" }, { status: 400 });
   }
   const body = await req.json();
-  const { title, content, excerpt, coverImage, published, featured, categoryIds, tagIds } = body;
+  const {
+    title,
+    content,
+    excerpt,
+    coverImage,
+    published,
+    featured,
+    isPremium,
+    sponsorLabel,
+    sponsorUrl,
+    categoryIds,
+    tagIds,
+  } = body;
 
   const slug = createSlug(title);
   const safeContent = sanitizeRichText(content);
@@ -67,6 +79,9 @@ export async function PUT(req: NextRequest, { params }: Params) {
         coverImage: coverImage || null,
         published: published ?? false,
         featured: featured ?? false,
+        isPremium: isPremium ?? false,
+        sponsorLabel: sponsorLabel || null,
+        sponsorUrl: sponsorUrl || null,
         categories: {
           create: (categoryIds || []).map((cId: number) => ({ categoryId: cId })),
         },

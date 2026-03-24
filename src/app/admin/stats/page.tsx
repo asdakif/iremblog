@@ -17,6 +17,17 @@ export default async function StatsPage() {
     },
   });
 
+  const [viewsEvents, progressEvents, sponsorCount, premiumCount] = await Promise.all([
+    prisma.storyAnalyticsEvent.count({ where: { eventType: "view" } }),
+    prisma.storyAnalyticsEvent.groupBy({
+      by: ["value"],
+      where: { eventType: "read_progress", value: { not: null } },
+      _count: { _all: true },
+    }),
+    prisma.story.count({ where: { sponsorLabel: { not: null } } }),
+    prisma.story.count({ where: { isPremium: true } }),
+  ]);
+
   // Last 14 days daily views
   const today = new Date();
   const dates: string[] = [];
@@ -96,6 +107,28 @@ export default async function StatsPage() {
           </span>{" "}
           over the last 14 days
         </p>
+      </div>
+
+      {/* Content business metrics */}
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-8">
+        <div className="bg-stone-800 border border-stone-700/60 rounded-xl p-4">
+          <p className="text-xs text-stone-500 uppercase">Analytics Views</p>
+          <p className="text-2xl font-bold text-stone-100 mt-1">{viewsEvents.toLocaleString()}</p>
+        </div>
+        <div className="bg-stone-800 border border-stone-700/60 rounded-xl p-4">
+          <p className="text-xs text-stone-500 uppercase">Premium Stories</p>
+          <p className="text-2xl font-bold text-stone-100 mt-1">{premiumCount}</p>
+        </div>
+        <div className="bg-stone-800 border border-stone-700/60 rounded-xl p-4">
+          <p className="text-xs text-stone-500 uppercase">Sponsored Stories</p>
+          <p className="text-2xl font-bold text-stone-100 mt-1">{sponsorCount}</p>
+        </div>
+        <div className="bg-stone-800 border border-stone-700/60 rounded-xl p-4">
+          <p className="text-xs text-stone-500 uppercase">100% Read Events</p>
+          <p className="text-2xl font-bold text-stone-100 mt-1">
+            {(progressEvents.find((e) => e.value === 100)?._count._all ?? 0).toLocaleString()}
+          </p>
+        </div>
       </div>
 
       {/* Top 10 stories */}

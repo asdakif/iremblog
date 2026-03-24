@@ -68,7 +68,19 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { title, content, excerpt, coverImage, published, featured, categoryIds, tagIds } = body;
+  const {
+    title,
+    content,
+    excerpt,
+    coverImage,
+    published,
+    featured,
+    isPremium,
+    sponsorLabel,
+    sponsorUrl,
+    categoryIds,
+    tagIds,
+  } = body;
 
   if (!title || !content) {
     return NextResponse.json({ error: "Title and content are required" }, { status: 400 });
@@ -87,6 +99,9 @@ export async function POST(req: NextRequest) {
         coverImage: coverImage || null,
         published: published ?? false,
         featured: featured ?? false,
+        isPremium: isPremium ?? false,
+        sponsorLabel: sponsorLabel || null,
+        sponsorUrl: sponsorUrl || null,
         categories: {
           create: (categoryIds || []).map((id: number) => ({ categoryId: id })),
         },

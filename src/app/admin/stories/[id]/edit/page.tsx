@@ -34,6 +34,9 @@ export default async function EditStoryPage({ params }: Props) {
     coverImage: story.coverImage || "",
     published: story.published,
     featured: story.featured,
+    isPremium: story.isPremium,
+    sponsorLabel: story.sponsorLabel || "",
+    sponsorUrl: story.sponsorUrl || "",
     categoryIds: story.categories.map((c) => c.categoryId),
     tagIds: story.tags.map((t) => t.tagId),
   };

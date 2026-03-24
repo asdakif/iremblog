@@ -11,6 +11,7 @@ import ShareButtons from "@/components/public/ShareButtons";
 import TableOfContents from "@/components/public/TableOfContents";
 import Breadcrumb from "@/components/public/Breadcrumb";
 import ViewTracker from "@/components/public/ViewTracker";
+import ReadDepthTracker from "@/components/public/ReadDepthTracker";
 import FontSizeControl from "@/components/public/FontSizeControl";
 import FavoriteButton from "@/components/public/FavoriteButton";
 import ReadLaterButton from "@/components/public/ReadLaterButton";
@@ -123,6 +124,7 @@ export default async function StoryPage({ params }: Props) {
     <div className="min-h-screen">
       <ReadingProgress />
       <ViewTracker storyId={story.id} />
+      <ReadDepthTracker storyId={story.id} />
       <JsonLd
         headline={story.title}
         description={story.excerpt}
@@ -170,12 +172,37 @@ export default async function StoryPage({ params }: Props) {
 
             {/* Title + action buttons */}
             <div className="flex items-start justify-between gap-4 mb-4">
-              <h1
-                className="text-4xl md:text-5xl font-bold text-stone-900 dark:text-stone-100 leading-tight flex-1"
-                style={{ fontFamily: "var(--font-display)" }}
-              >
-                {story.title}
-              </h1>
+              <div className="flex-1">
+                <h1
+                  className="text-4xl md:text-5xl font-bold text-stone-900 dark:text-stone-100 leading-tight"
+                  style={{ fontFamily: "var(--font-display)" }}
+                >
+                  {story.title}
+                </h1>
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {story.isPremium && (
+                    <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300">
+                      Premium
+                    </span>
+                  )}
+                  {story.sponsorLabel && (
+                    story.sponsorUrl ? (
+                      <a
+                        href={story.sponsorUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-2.5 py-1 rounded-full text-xs font-semibold bg-warm-100 text-warm-700 dark:bg-warm-900/30 dark:text-warm-300 hover:underline"
+                      >
+                        Sponsored: {story.sponsorLabel}
+                      </a>
+                    ) : (
+                      <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-warm-100 text-warm-700 dark:bg-warm-900/30 dark:text-warm-300">
+                        Sponsored: {story.sponsorLabel}
+                      </span>
+                    )
+                  )}
+                </div>
+              </div>
               <div className="flex items-center gap-2 flex-shrink-0 mt-2">
                 <FavoriteButton slug={story.slug} title={story.title} />
                 <ReadLaterButton slug={story.slug} title={story.title} />
