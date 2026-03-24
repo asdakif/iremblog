@@ -49,6 +49,18 @@ export default async function StoryPage({ params }: Props) {
     include: {
       categories: { include: { category: true } },
       tags: { include: { tag: true } },
+      series: {
+        include: {
+          series: {
+            include: {
+              stories: {
+                orderBy: { order: "asc" },
+                include: { story: { select: { id: true, slug: true, title: true, published: true } } },
+              },
+            },
+          },
+        },
+      },
     },
   });
 
@@ -57,6 +69,14 @@ export default async function StoryPage({ params }: Props) {
   const categories = story.categories.map((c) => c.category);
   const tags = story.tags.map((t) => t.tag);
   const safeStoryContent = sanitizeRichText(story.content);
+  const activeSeries = story.series[0]?.series;
+  const publishedSeriesStories =
+    activeSeries?.stories.filter((entry) => entry.story.published).map((entry) => entry.story) ?? [];
+  const seriesIndex = publishedSeriesStories.findIndex((entry) => entry.id === story.id);
+  const nextInSeries =
+    seriesIndex >= 0 && seriesIndex + 1 < publishedSeriesStories.length
+      ? publishedSeriesStories[seriesIndex + 1]
+      : null;
 
   const allComments = await prisma.comment.findMany({
     where: { storyId: story.id, approved: true },
@@ -197,6 +217,25 @@ export default async function StoryPage({ params }: Props) {
 
             {/* Tags + Share */}
             <div className="mt-10 pt-6 border-t border-ink-100/60 dark:border-stone-700/60 space-y-4">
+              {activeSeries && seriesIndex >= 0 && (
+                <div className="rounded-xl border border-ink-100/60 dark:border-stone-700/60 bg-ink-50/50 dark:bg-stone-800/40 p-4">
+                  <p className="text-xs font-semibold text-ink-600 dark:text-ink-400 uppercase tracking-wide mb-1">
+                    Series progress
+                  </p>
+                  <p className="text-sm text-stone-600 dark:text-stone-300">
+                    {activeSeries.name}: Part {seriesIndex + 1} of {publishedSeriesStories.length}
+                  </p>
+                  {nextInSeries && (
+                    <Link
+                      href={`/stories/${nextInSeries.slug}`}
+                      className="inline-flex items-center gap-1 mt-2 text-sm font-semibold text-ink-600 dark:text-ink-400 hover:underline"
+                    >
+                      Continue to next part: {nextInSeries.title} →
+                    </Link>
+                  )}
+                </div>
+              )}
+
               {tags.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {tags.map((tag) => (

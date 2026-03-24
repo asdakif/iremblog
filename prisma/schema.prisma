@@ -76,6 +76,15 @@ model Subscriber {
   createdAt DateTime @default(now())
 }
 
+model PushSubscription {
+  id        Int      @id @default(autoincrement())
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+}
+
 model DailyView {
   id      Int    @id @default(autoincrement())
   storyId Int

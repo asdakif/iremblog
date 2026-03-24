@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import PWARegister from "@/components/public/PWARegister";
+import PushPrompt from "@/components/public/PushPrompt";
 
 export const metadata: Metadata = {
   title: {
@@ -36,6 +37,7 @@ export default function RootLayout({
       <body className="antialiased">
         {children}
         <PWARegister />
+        <PushPrompt />
       </body>
     </html>
   );
