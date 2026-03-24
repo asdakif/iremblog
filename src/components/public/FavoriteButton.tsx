@@ -25,7 +25,7 @@ export default function FavoriteButton({ slug, title }: FavoriteButtonProps) {
     }
   }, [slug]);
 
-  function toggle() {
+  async function toggle() {
     const stored = localStorage.getItem("favorites");
     let list: FavoriteItem[] = [];
     try {
@@ -45,6 +45,21 @@ export default function FavoriteButton({ slug, title }: FavoriteButtonProps) {
 
     localStorage.setItem("favorites", JSON.stringify(list));
     setFavorited(next);
+
+    // Also sync to cloud account if user is logged in.
+    try {
+      const method = next ? "POST" : "DELETE";
+      const url = next
+        ? "/api/account/saved"
+        : `/api/account/saved?kind=favorite&slug=${encodeURIComponent(slug)}`;
+      await fetch(url, {
+        method,
+        headers: next ? { "Content-Type": "application/json" } : undefined,
+        body: next ? JSON.stringify({ kind: "favorite", slug }) : undefined,
+      });
+    } catch {
+      // Keep local behavior even if cloud sync fails.
+    }
 
     setAnimating(true);
     setTimeout(() => setAnimating(false), 300);

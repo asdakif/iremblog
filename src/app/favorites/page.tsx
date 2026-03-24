@@ -13,22 +13,45 @@ export default function FavoritesPage() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem("favorites");
-    if (stored) {
+    async function load() {
       try {
-        const list: FavoriteItem[] = JSON.parse(stored);
-        setFavorites(list);
+        const cloudRes = await fetch("/api/account/saved?kind=favorite", { cache: "no-store" });
+        if (cloudRes.ok) {
+          const cloudList = (await cloudRes.json()) as FavoriteItem[];
+          setFavorites(cloudList);
+          localStorage.setItem("favorites", JSON.stringify(cloudList));
+          setLoaded(true);
+          return;
+        }
       } catch {
-        setFavorites([]);
+        // Fall back to local storage below.
       }
+
+      const stored = localStorage.getItem("favorites");
+      if (stored) {
+        try {
+          const list: FavoriteItem[] = JSON.parse(stored);
+          setFavorites(list);
+        } catch {
+          setFavorites([]);
+        }
+      }
+      setLoaded(true);
     }
-    setLoaded(true);
+    void load();
   }, []);
 
-  function remove(slug: string) {
+  async function remove(slug: string) {
     const updated = favorites.filter((f) => f.slug !== slug);
     setFavorites(updated);
     localStorage.setItem("favorites", JSON.stringify(updated));
+    try {
+      await fetch(`/api/account/saved?kind=favorite&slug=${encodeURIComponent(slug)}`, {
+        method: "DELETE",
+      });
+    } catch {
+      // Keep local list even when cloud remove fails.
+    }
   }
 
   return (

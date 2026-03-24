@@ -5,6 +5,7 @@ A warm, literary story blog built with Next.js 14, SQLite, Prisma, TailwindCSS, 
 ## Features
 
 - **Public Blog** — Homepage with featured stories, category/tag filtering, full-text search, and a comment section on each story
+- **Reader Accounts** — Register/login, profile page, and cloud-synced Favorites + Read Later lists
 - **Admin Panel** — Password-protected dashboard to create/edit/delete stories (with TipTap rich text editor), manage categories & tags, and moderate comments
 - **Design** — Warm literary aesthetic with Playfair Display headings, Lora body text, colorful gradients, dark mode support, and responsive layout
 
@@ -44,6 +45,7 @@ NEXTAUTH_SECRET="your-super-secret-key-at-least-32-chars"
 NEXTAUTH_URL="http://localhost:3000"
 ADMIN_EMAIL="admin@yourblog.com"
 ADMIN_PASSWORD="your-secure-password"
+READER_AUTH_SECRET="reader-session-secret-change-me"
 ```
 
 Production note: set `ADMIN_PASSWORD` as a bcrypt hash (plaintext fallback is only for local development).

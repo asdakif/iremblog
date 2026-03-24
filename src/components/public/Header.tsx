@@ -10,6 +10,7 @@ export default function Header() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [readerLoggedIn, setReaderLoggedIn] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -23,6 +24,21 @@ export default function Header() {
       setDarkMode(true);
       document.documentElement.classList.add("dark");
     }
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    void fetch("/api/account/me", { cache: "no-store" })
+      .then((res) => res.json() as Promise<{ user: unknown }>)
+      .then((data) => {
+        if (active) setReaderLoggedIn(!!data.user);
+      })
+      .catch(() => {
+        if (active) setReaderLoggedIn(false);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const toggleDark = () => {
@@ -87,6 +103,12 @@ export default function Header() {
 
             {/* Actions */}
             <div className="flex items-center gap-2">
+              <Link
+                href={readerLoggedIn ? "/profile" : "/account/login"}
+                className="hidden md:inline-flex px-3 py-1.5 rounded-full text-xs font-semibold border border-ink-100 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:text-ink-600 dark:hover:text-ink-400"
+              >
+                {readerLoggedIn ? "Profile" : "Sign in"}
+              </Link>
               <button
                 onClick={() => setSearchOpen(!searchOpen)}
                 className="p-2 rounded-full text-stone-500 dark:text-stone-400 hover:text-ink-600 dark:hover:text-ink-400 hover:bg-ink-50 dark:hover:bg-stone-800 transition-all"
@@ -130,6 +152,7 @@ export default function Header() {
                 { href: "/categories/fiction", label: "Fiction" },
                 { href: "/categories/memoir", label: "Memoir" },
                 { href: "/categories/poetry", label: "Poetry" },
+                { href: readerLoggedIn ? "/profile" : "/account/login", label: readerLoggedIn ? "Profile" : "Sign in" },
               ].map(({ href, label }) => (
                 <Link
                   key={href}

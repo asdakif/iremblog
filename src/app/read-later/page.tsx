@@ -13,22 +13,45 @@ export default function ReadLaterPage() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem("readLater");
-    if (stored) {
+    async function load() {
       try {
-        const list: ReadLaterItem[] = JSON.parse(stored);
-        setItems(list);
+        const cloudRes = await fetch("/api/account/saved?kind=readLater", { cache: "no-store" });
+        if (cloudRes.ok) {
+          const cloudList = (await cloudRes.json()) as ReadLaterItem[];
+          setItems(cloudList);
+          localStorage.setItem("readLater", JSON.stringify(cloudList));
+          setLoaded(true);
+          return;
+        }
       } catch {
-        setItems([]);
+        // Fall back to local storage below.
       }
+
+      const stored = localStorage.getItem("readLater");
+      if (stored) {
+        try {
+          const list: ReadLaterItem[] = JSON.parse(stored);
+          setItems(list);
+        } catch {
+          setItems([]);
+        }
+      }
+      setLoaded(true);
     }
-    setLoaded(true);
+    void load();
   }, []);
 
-  function remove(slug: string) {
+  async function remove(slug: string) {
     const updated = items.filter((i) => i.slug !== slug);
     setItems(updated);
     localStorage.setItem("readLater", JSON.stringify(updated));
+    try {
+      await fetch(`/api/account/saved?kind=readLater&slug=${encodeURIComponent(slug)}`, {
+        method: "DELETE",
+      });
+    } catch {
+      // Keep local list even when cloud remove fails.
+    }
   }
 
   return (

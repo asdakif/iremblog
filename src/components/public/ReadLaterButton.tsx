@@ -24,7 +24,7 @@ export default function ReadLaterButton({ slug, title }: ReadLaterButtonProps) {
     }
   }, [slug]);
 
-  function toggle() {
+  async function toggle() {
     const stored = localStorage.getItem("readLater");
     let list: ReadLaterItem[] = [];
     try {
@@ -44,6 +44,21 @@ export default function ReadLaterButton({ slug, title }: ReadLaterButtonProps) {
 
     localStorage.setItem("readLater", JSON.stringify(list));
     setSaved(next);
+
+    // Also sync to cloud account if user is logged in.
+    try {
+      const method = next ? "POST" : "DELETE";
+      const url = next
+        ? "/api/account/saved"
+        : `/api/account/saved?kind=readLater&slug=${encodeURIComponent(slug)}`;
+      await fetch(url, {
+        method,
+        headers: next ? { "Content-Type": "application/json" } : undefined,
+        body: next ? JSON.stringify({ kind: "readLater", slug }) : undefined,
+      });
+    } catch {
+      // Keep local behavior even if cloud sync fails.
+    }
   }
 
   return (

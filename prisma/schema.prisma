@@ -25,6 +25,7 @@ model Story {
   comments    Comment[]
   dailyViews  DailyView[]
   series      SeriesStory[]
+  savedBy     SavedStory[]
 }
 
 model Category {
@@ -101,4 +102,26 @@ model SeriesStory {
   order     Int    @default(0)
 
   @@id([seriesId, storyId])
+}
+
+model ReaderUser {
+  id          Int          @id @default(autoincrement())
+  email       String       @unique
+  name        String?
+  passwordHash String
+  createdAt   DateTime     @default(now())
+  savedStories SavedStory[]
+}
+
+model SavedStory {
+  id           Int        @id @default(autoincrement())
+  userId       Int
+  user         ReaderUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  storyId      Int
+  story        Story      @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  kind         String
+  createdAt    DateTime   @default(now())
+
+  @@unique([userId, storyId, kind])
+  @@index([userId, kind])
 }
