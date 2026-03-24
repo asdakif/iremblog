@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import Header from "@/components/public/Header";
 import Footer from "@/components/public/Footer";
 import SearchBar from "@/components/public/SearchBar";
+import PopularSearches from "@/components/public/PopularSearches";
 import { formatDate, readingTime, stripHtml } from "@/lib/utils";
 import { escapeHtml } from "@/lib/sanitize";
 import { Search, BookOpen, Calendar, Clock } from "lucide-react";
@@ -12,7 +13,57 @@ export const metadata: Metadata = {
   title: "Search Stories",
 };
 
-type Props = { searchParams: Promise<{ q?: string }> };
+type Props = {
+  searchParams: Promise<{ q?: string; category?: string; period?: string; sort?: string }>;
+};
+
+function normalizeText(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function levenshtein(a: string, b: string): number {
+  if (!a.length) return b.length;
+  if (!b.length) return a.length;
+  const matrix = Array.from({ length: a.length + 1 }, () => new Array<number>(b.length + 1).fill(0));
+  for (let i = 0; i <= a.length; i++) matrix[i][0] = i;
+  for (let j = 0; j <= b.length; j++) matrix[0][j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      matrix[i][j] = Math.min(matrix[i - 1][j] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j - 1] + cost);
+    }
+  }
+  return matrix[a.length][b.length];
+}
+
+function fuzzyScore(title: string, excerpt: string, content: string, query: string): number {
+  const q = normalizeText(query);
+  const titleN = normalizeText(title);
+  const excerptN = normalizeText(excerpt);
+  const contentN = normalizeText(stripHtml(content)).slice(0, 1200);
+
+  if (titleN.includes(q)) return 100;
+  if (excerptN.includes(q)) return 80;
+  if (contentN.includes(q)) return 65;
+
+  const titleWords = titleN.split(" ").filter(Boolean);
+  const minWordDistance = titleWords.length
+    ? Math.min(...titleWords.map((word) => levenshtein(word, q)))
+    : 99;
+  const fullDistance = levenshtein(titleN.slice(0, Math.max(q.length + 3, 6)), q);
+  const distance = Math.min(minWordDistance, fullDistance);
+
+  if (distance <= 1) return 60;
+  if (distance === 2) return 45;
+  if (distance === 3) return 30;
+  return 0;
+}
 
 function highlight(text: string, query: string): string {
   const safeText = escapeHtml(text);
@@ -32,26 +83,83 @@ function getSnippet(content: string, query: string, length = 200): string {
 }
 
 export default async function SearchPage({ searchParams }: Props) {
-  const { q } = await searchParams;
+  const { q, category, period, sort } = await searchParams;
   const query = q?.trim() || "";
+  const categoryFilter = category?.trim() || "";
+  const periodFilter = period?.trim() || "any";
+  const sortFilter = sort?.trim() || "relevance";
+
+  const categories = await prisma.category.findMany({
+    orderBy: { name: "asc" },
+    select: { id: true, name: true, slug: true },
+  });
+
+  const afterDate =
+    periodFilter === "7d"
+      ? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+      : periodFilter === "30d"
+        ? new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+        : periodFilter === "365d"
+          ? new Date(Date.now() - 365 * 24 * 60 * 60 * 1000)
+          : null;
+
+  const baseWhere = {
+    published: true,
+    ...(categoryFilter
+      ? {
+          categories: {
+            some: { category: { slug: categoryFilter } },
+          },
+        }
+      : {}),
+    ...(afterDate ? { createdAt: { gte: afterDate } } : {}),
+  };
 
   const stories = query
     ? await prisma.story.findMany({
         where: {
-          published: true,
+          ...baseWhere,
           OR: [
             { title: { contains: query } },
             { content: { contains: query } },
             { excerpt: { contains: query } },
           ],
         },
-        orderBy: { createdAt: "desc" },
+        orderBy:
+          sortFilter === "popular"
+            ? { viewCount: "desc" }
+            : { createdAt: "desc" },
         include: {
           categories: { include: { category: true } },
           tags: { include: { tag: true } },
         },
       })
     : [];
+
+  let fallbackStories: typeof stories = [];
+  if (query && stories.length === 0) {
+    const candidates = await prisma.story.findMany({
+      where: baseWhere,
+      take: 150,
+      orderBy: { createdAt: "desc" },
+      include: {
+        categories: { include: { category: true } },
+        tags: { include: { tag: true } },
+      },
+    });
+
+    fallbackStories = candidates
+      .map((story) => ({
+        story,
+        score: fuzzyScore(story.title, story.excerpt, story.content, query),
+      }))
+      .filter((entry) => entry.score > 0)
+      .sort((a, b) => b.score - a.score || b.story.viewCount - a.story.viewCount)
+      .slice(0, 24)
+      .map((entry) => entry.story);
+  }
+
+  const finalStories = stories.length > 0 ? stories : fallbackStories;
 
   return (
     <div className="min-h-screen">
@@ -71,29 +179,41 @@ export default async function SearchPage({ searchParams }: Props) {
             >
               Find a Story
             </h1>
-            <SearchBar />
+            <SearchBar
+              initialQuery={query}
+              initialCategory={categoryFilter}
+              initialPeriod={periodFilter}
+              initialSort={sortFilter}
+              categories={categories}
+            />
+            <PopularSearches />
           </div>
 
           {/* Results */}
           {query && (
             <div className="mt-10">
               <p className="text-stone-500 dark:text-stone-400 mb-6 text-sm">
-                {stories.length > 0
-                  ? `${stories.length} result${stories.length !== 1 ? "s" : ""} for `
+                {finalStories.length > 0
+                  ? `${finalStories.length} result${finalStories.length !== 1 ? "s" : ""} for `
                   : `No stories found for `}
                 <span className="font-semibold text-stone-700 dark:text-stone-300">
                   &ldquo;{query}&rdquo;
                 </span>
               </p>
 
-              {stories.length === 0 ? (
+              {finalStories.length === 0 ? (
                 <div className="text-center py-16 text-stone-400">
                   <BookOpen size={48} className="mx-auto mb-4 opacity-30" />
                   <p className="text-lg">Try a different search term.</p>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {stories.map((story) => {
+                  {stories.length === 0 && (
+                    <p className="text-xs text-stone-400 dark:text-stone-500">
+                      Showing typo-tolerant matches for your query.
+                    </p>
+                  )}
+                  {finalStories.map((story) => {
                     const snippet = getSnippet(story.content, query);
                     const highlightedTitle = highlight(story.title, query);
                     const highlightedSnippet = highlight(snippet, query);
