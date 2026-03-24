@@ -6,9 +6,7 @@ import Link from "next/link";
 import {
   PlusCircle,
   Pencil,
-  Trash2,
   Eye,
-  EyeOff,
   CheckCircle,
   Clock,
   BarChart2,

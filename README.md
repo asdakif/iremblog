@@ -46,6 +46,8 @@ ADMIN_EMAIL="admin@yourblog.com"
 ADMIN_PASSWORD="your-secure-password"
 ```
 
+Production note: set `ADMIN_PASSWORD` as a bcrypt hash (plaintext fallback is only for local development).
+
 ### 3. Initialize the database
 
 ```bash
@@ -116,6 +118,10 @@ prisma/
 | `npm run dev` | Start dev server |
 | `npm run build` | Build for production |
 | `npm run start` | Start production server |
+| `npm run lint` | Run ESLint |
+| `npm run typecheck` | Run TypeScript checks |
+| `npm run test` | Run unit tests once |
+| `npm run test:watch` | Run unit tests in watch mode |
 | `npm run db:migrate` | Run pending migrations |
 | `npm run db:seed` | Seed sample stories |
 | `npm run db:studio` | Open Prisma Studio |

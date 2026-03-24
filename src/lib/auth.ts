@@ -2,6 +2,8 @@ import { type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 
+const isBcryptHash = (value: string) => value.startsWith("$2a$") || value.startsWith("$2b$") || value.startsWith("$2y$");
+
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -20,8 +22,14 @@ export const authOptions: NextAuthOptions = {
 
         if (credentials.email !== adminEmail) return null;
 
-        // Support both plain text (for dev) and bcrypt hashed passwords
-        const isValid = adminPassword.startsWith("$2")
+        const hashedPassword = isBcryptHash(adminPassword);
+
+        // Hard requirement in production: admin password must be bcrypt-hashed.
+        if (process.env.NODE_ENV === "production" && !hashedPassword) {
+          return null;
+        }
+
+        const isValid = hashedPassword
           ? await bcrypt.compare(credentials.password, adminPassword)
           : credentials.password === adminPassword;
 

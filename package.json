@@ -8,6 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
     "db:seed": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed.ts",
@@ -51,6 +53,9 @@
     "typescript": "^5.9.3"
   },
   "devDependencies": {
-    "ts-node": "^10.9.2"
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^14.2.35",
+    "ts-node": "^10.9.2",
+    "vitest": "^4.1.1"
   }
 }
