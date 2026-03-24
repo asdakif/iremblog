@@ -24,6 +24,9 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
   const [saveError, setSaveError] = useState("");
+  const [newsletterSubscribed, setNewsletterSubscribed] = useState(false);
+  const [newsletterLoading, setNewsletterLoading] = useState(false);
+  const [newsletterMessage, setNewsletterMessage] = useState("");
 
   useEffect(() => {
     async function load() {
@@ -47,6 +50,12 @@ export default function ProfilePage() {
       if (readRes.ok) {
         const list = (await readRes.json()) as Array<{ slug: string; title: string }>;
         setReadLater(list.length);
+      }
+
+      const newsletterRes = await fetch("/api/account/newsletter", { cache: "no-store" });
+      if (newsletterRes.ok) {
+        const newsletterData = (await newsletterRes.json()) as { subscribed: boolean };
+        setNewsletterSubscribed(newsletterData.subscribed);
       }
       setLoading(false);
     }
@@ -84,6 +93,21 @@ export default function ProfilePage() {
     setCurrentPassword("");
     setNewPassword("");
     setSaveMessage("Profile updated.");
+  }
+
+  async function toggleNewsletter() {
+    setNewsletterLoading(true);
+    setNewsletterMessage("");
+    const method = newsletterSubscribed ? "DELETE" : "POST";
+    const res = await fetch("/api/account/newsletter", { method });
+    const data = (await res.json()) as { subscribed?: boolean; error?: string };
+    setNewsletterLoading(false);
+    if (!res.ok) {
+      setNewsletterMessage(data.error || "Failed to update newsletter setting.");
+      return;
+    }
+    setNewsletterSubscribed(!!data.subscribed);
+    setNewsletterMessage(data.subscribed ? "You are subscribed to the newsletter." : "You are unsubscribed.");
   }
 
   return (
@@ -143,6 +167,30 @@ export default function ProfilePage() {
                 >
                   {saving ? "Saving..." : "Save changes"}
                 </button>
+              </div>
+              <div className="mt-6 rounded-xl border border-ink-100 dark:border-stone-700 p-4 space-y-3">
+                <h2 className="text-sm font-semibold text-stone-700 dark:text-stone-300">
+                  Newsletter
+                </h2>
+                <p className="text-sm text-stone-500 dark:text-stone-400">
+                  {newsletterSubscribed
+                    ? "You are currently subscribed with your account email."
+                    : "You are currently unsubscribed."}
+                </p>
+                <button
+                  onClick={toggleNewsletter}
+                  disabled={newsletterLoading}
+                  className="rounded-xl border border-ink-200 dark:border-stone-600 px-4 py-2 text-sm font-semibold hover:bg-ink-50 dark:hover:bg-stone-700 disabled:opacity-60"
+                >
+                  {newsletterLoading
+                    ? "Updating..."
+                    : newsletterSubscribed
+                      ? "Unsubscribe"
+                      : "Subscribe"}
+                </button>
+                {newsletterMessage && (
+                  <p className="text-sm text-stone-500 dark:text-stone-400">{newsletterMessage}</p>
+                )}
               </div>
               <button
                 onClick={signOut}
