@@ -18,6 +18,12 @@ export default function ProfilePage() {
   const [favorites, setFavorites] = useState(0);
   const [readLater, setReadLater] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [nameInput, setNameInput] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("");
+  const [saveError, setSaveError] = useState("");
 
   useEffect(() => {
     async function load() {
@@ -28,6 +34,7 @@ export default function ProfilePage() {
         return;
       }
       setUser(meData.user);
+      setNameInput(meData.user.name || "");
 
       const [favRes, readRes] = await Promise.all([
         fetch("/api/account/saved?kind=favorite", { cache: "no-store" }),
@@ -52,6 +59,33 @@ export default function ProfilePage() {
     router.refresh();
   }
 
+  async function saveProfile() {
+    setSaving(true);
+    setSaveError("");
+    setSaveMessage("");
+    const res = await fetch("/api/account/me", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: nameInput,
+        currentPassword: currentPassword || undefined,
+        newPassword: newPassword || undefined,
+      }),
+    });
+    const data = (await res.json()) as { error?: string; user?: ReaderUser };
+    setSaving(false);
+    if (!res.ok) {
+      setSaveError(data.error || "Failed to update profile.");
+      return;
+    }
+    if (data.user) {
+      setUser(data.user);
+    }
+    setCurrentPassword("");
+    setNewPassword("");
+    setSaveMessage("Profile updated.");
+  }
+
   return (
     <>
       <Header />
@@ -74,6 +108,41 @@ export default function ProfilePage() {
                   <p className="text-sm text-stone-500 dark:text-stone-400">Read later</p>
                   <p className="text-2xl font-bold mt-1">{readLater}</p>
                 </div>
+              </div>
+              <div className="mt-6 rounded-xl border border-ink-100 dark:border-stone-700 p-4 space-y-3">
+                <h2 className="text-sm font-semibold text-stone-700 dark:text-stone-300">
+                  Edit profile
+                </h2>
+                <input
+                  type="text"
+                  value={nameInput}
+                  onChange={(e) => setNameInput(e.target.value)}
+                  placeholder="Display name"
+                  className="w-full rounded-xl border border-ink-100 dark:border-stone-700 bg-white dark:bg-stone-900 px-3 py-2 text-sm"
+                />
+                <input
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="Current password (required for password change)"
+                  className="w-full rounded-xl border border-ink-100 dark:border-stone-700 bg-white dark:bg-stone-900 px-3 py-2 text-sm"
+                />
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="New password (min 8 chars)"
+                  className="w-full rounded-xl border border-ink-100 dark:border-stone-700 bg-white dark:bg-stone-900 px-3 py-2 text-sm"
+                />
+                {saveError && <p className="text-sm text-rose-500">{saveError}</p>}
+                {saveMessage && <p className="text-sm text-sage-600 dark:text-sage-400">{saveMessage}</p>}
+                <button
+                  onClick={saveProfile}
+                  disabled={saving}
+                  className="rounded-xl bg-ink-600 hover:bg-ink-700 text-white px-4 py-2 text-sm font-semibold disabled:opacity-60"
+                >
+                  {saving ? "Saving..." : "Save changes"}
+                </button>
               </div>
               <button
                 onClick={signOut}
