@@ -1,0 +1,104 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Story {
+  id          Int       @id @default(autoincrement())
+  title       String
+  slug        String    @unique
+  content     String
+  excerpt     String
+  coverImage  String?
+  published   Boolean   @default(false)
+  featured    Boolean   @default(false)
+  viewCount   Int       @default(0)
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  categories  CategoryOnStory[]
+  tags        TagOnStory[]
+  comments    Comment[]
+  dailyViews  DailyView[]
+  series      SeriesStory[]
+}
+
+model Category {
+  id      Int               @id @default(autoincrement())
+  name    String            @unique
+  slug    String            @unique
+  stories CategoryOnStory[]
+}
+
+model CategoryOnStory {
+  story      Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  storyId    Int
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  categoryId Int
+
+  @@id([storyId, categoryId])
+}
+
+model Tag {
+  id      Int          @id @default(autoincrement())
+  name    String       @unique
+  slug    String       @unique
+  stories TagOnStory[]
+}
+
+model TagOnStory {
+  story   Story @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  storyId Int
+  tag     Tag   @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  tagId   Int
+
+  @@id([storyId, tagId])
+}
+
+model Comment {
+  id         Int      @id @default(autoincrement())
+  storyId    Int
+  story      Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  authorName String
+  body       String
+  approved   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+}
+
+model Subscriber {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  createdAt DateTime @default(now())
+}
+
+model DailyView {
+  id      Int    @id @default(autoincrement())
+  storyId Int
+  story   Story  @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  date    String // "2024-03-24"
+  count   Int    @default(0)
+
+  @@unique([storyId, date])
+}
+
+model Series {
+  id          Int           @id @default(autoincrement())
+  name        String        @unique
+  slug        String        @unique
+  description String?
+  stories     SeriesStory[]
+}
+
+model SeriesStory {
+  series    Series @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  seriesId  Int
+  story     Story  @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  storyId   Int
+  order     Int    @default(0)
+
+  @@id([seriesId, storyId])
+}
